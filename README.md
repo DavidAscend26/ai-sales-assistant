@@ -21,18 +21,23 @@ WhatsApp (Twilio)
         ▼
  ConversationService
         │
-        ├─ Tool: Catalog Search (Postgres)
-        ├─ Tool: Financing Calculator
-        ├─ Tool: Normalize Make/Model
+        ├─ Tool: Búsqueda de catálogo (Postgres)
+        ├─ Tool: Calculadora financiera
+        ├─ Tool: Normalización de Marca/Modelo
         └─ RAG:
              ├─ Embeddings (fastembed)
              ├─ Vector DB (Qdrant)
-             └─ Knowledge Chunks (Postgres)
+             └─ Chunks de conocimiento (Postgres)
         │
         ▼
      OpenAI LLM
 ```
-
+Servicios:
+* api: FastAPI (chat + tools + RAG)
+* worker: tareas en background (si aplica)
+* postgres: catálogo + chunks
+* redis: memoria / colas
+* qdrant: base de datos vectorial (RAG)
 
 ## 0) Requisitos
 - Docker + Docker Compose
@@ -47,6 +52,115 @@ Copia `.env.example` a `.env` y llena:
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_WHATSAPP_FROM` (sandbox, ej: `whatsapp:+14155238886`)
 
-## 2) Levantar todo con Docker
+## 2) Clonar y levantar todo con Docker
 ```bash
-docker compose up --build
+git clone DavidAscend26/ai-sales-assistant
+cd ai-sales-assistant
+
+cp .env.example .env
+# agrega tu OPENAI_API_KEY en .env
+
+docker compose up -d --build
+```
+
+Verifica que la API esté viva:
+```bash
+curl http://localhost:8000/health
+```
+## 3) Inicializar base de datos y datos
+
+Creat tablas
+```bash
+docker compose exec api python -m app.scripts.init_db
+```
+
+Sembrar catálogo (CSV)
+```bash
+docker compose exec api python -m app.scripts.init_db
+```
+
+Verificación manual:
+```bash
+docker compose exec postgres psql -U postgres -d kavak \
+  -c "SELECT make, model, year, price_mxn FROM cars LIMIT 5;"
+```
+
+## 4) Ingesta de conocimiento (RAG)
+
+Indexa conocimiento en:
+* Postgres (texto)
+* Qdrant (vectores)
+
+```bash
+docker compose exec api python -m app.scripts.ingest_kavak_knowledge --truncate
+```
+
+Verifica Qdrant:
+```bash
+curl http://localhost:6333/collections
+```
+
+## 5) Smoke tests (End-to-End sin WhatsApp)
+
+Propuesta de valor (RAG)
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"demo","message":"¿Cuál es la propuesta de valor de Kavak?"}'
+```
+
+Búsqueda de autos (Catálogo)
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"demo","message":"Busco un Nissan Versa por menos de 300 mil"}'
+```
+
+Financiamiento
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"demo","message":"El coche cuesta 280000 y tengo 60000 de enganche. Cotiza a 3,4,5 y 6 años"}'
+```
+
+Con esto se valida:
+* API
+* Catálogo
+* RAG (Qdrant)
+* Orquestación LLM
+* Tools
+
+## 6) WhatsApp Demo
+### Exponer API con ngrok
+```bash
+ngrok http 8000
+```
+
+### Twilio Sandbox
+En Twilio Console → WhatsApp Sandbox:
+* WHEN A MESSAGE COMES IN:
+   ```sh
+   https://<ngrok-url>/twilio/whatsapp
+   ```
+* Method: POST
+
+### Probar desde WhatsApp
+Ejemplos:
+* ¿Qué es Kavak?
+* ¿Qué autos tienen disponibles en el catálogo modelo superior a 2020?
+* ¿Cómo funciona el financiamiento para un carro de 280,000 con enganchde de 100,000 a 3 años?
+
+## Estructura del proyecto
+```
+app/
+├── api/            # FastAPI routes
+├── services/       # ConversationService
+├── tools/          # catalog, financing, normalize, RAG
+├── llm/            # orchestrator
+├── db/             # models, session
+├── scripts/        # init_db, seed_catalog, ingest_knowledge
+├── tests/          # pytest unit tests
+docker/
+├── Dockerfile
+docker-compose.yml
+```
