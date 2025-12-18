@@ -11,35 +11,27 @@ Este repo implementa un bot estilo *agente comercial* (Kavak) con:
 - **Tests** (pytest + pytest-asyncio)
 - **Docker + docker compose**
 
-flowchart TD
-    WA[WhatsApp (Twilio)]
-    API[FastAPI<br/>(/twilio/whatsapp, /chat)]
-    CS[ConversationService]
-
-    TOOL1[Catalog Search<br/>(Postgres)]
-    TOOL2[Financing Calculator]
-    TOOL3[Normalize Make/Model]
-
-    RAG[RAG]
-    EMB[Embeddings<br/>(fastembed)]
-    VDB[Vector DB<br/>(Qdrant)]
-    CHUNKS[Knowledge Chunks<br/>(Postgres)]
-
-    LLM[OpenAI LLM]
-
-    WA --> API
-    API --> CS
-
-    CS --> TOOL1
-    CS --> TOOL2
-    CS --> TOOL3
-    CS --> RAG
-
-    RAG --> EMB
-    RAG --> VDB
-    RAG --> CHUNKS
-
-    CS --> LLM
+## Arquitectura (alto nivel)
+```
+WhatsApp (Twilio)
+        │
+        ▼
+ FastAPI (/twilio/whatsapp, /chat)
+        │
+        ▼
+ ConversationService
+        │
+        ├─ Tool: Catalog Search (Postgres)
+        ├─ Tool: Financing Calculator
+        ├─ Tool: Normalize Make/Model
+        └─ RAG:
+             ├─ Embeddings (fastembed)
+             ├─ Vector DB (Qdrant)
+             └─ Knowledge Chunks (Postgres)
+        │
+        ▼
+     OpenAI LLM
+```
 
 
 ## 0) Requisitos
