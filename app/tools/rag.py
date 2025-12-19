@@ -69,11 +69,11 @@ async def retrieve_kavak_knowledge(session: AsyncSession, query: str, top_k: int
             if results:
                 return results[:top_k]
 
-        logger.warning("Qdrant client has neither query_points() nor search(). Falling back to Postgres.")
+        logger.warning("El cliente Qdrant no tiene query_points() ni search(). Se recurre a Postgres.")
     except Exception:
-        logger.exception("Qdrant retrieval failed. Falling back to Postgres.")
+        logger.exception("Error en la recuperación de Qdrant. Se está volviendo a Postgres.")
 
-    # 2) Fallback: Postgres (recency). Nunca falla si hay chunks.
+    # 2) Fallback: Postgres. Nunca falla si hay chunks.
     stmt = select(KnowledgeChunk).order_by(KnowledgeChunk.id.desc()).limit(top_k)
     rows = (await session.execute(stmt)).scalars().all()
     return [{"source": r.source, "title": r.title, "content": r.content, "score": 0.0} for r in rows]

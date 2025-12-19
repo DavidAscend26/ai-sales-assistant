@@ -67,7 +67,22 @@ Verifica que la API esté viva:
 ```bash
 curl http://localhost:8000/health
 ```
-## 3) Inicializar base de datos y datos
+
+## 3) Pruebas (Unit tests)
+
+Uso pytest con discovery estándar. Los unit tests validan lógica pura: normalización de texto, cálculo financiero y búsqueda en base de datos.
+Los tests no dependen de OpenAI ni Twilio, por lo que son deterministas y rápidos.
+Para el flujo completo uso smoke tests vía curl documentados más abajo.
+```bash
+docker compose exec api pytest -v
+```
+
+### Tests incluidos
+- **test_normalize.py**: Normalización make/model (RapidFuzz)
+- **test_financing.py**: Cálculo de financiamiento
+- **test_catalog_search.py**: Búsqueda de catálogo
+
+## 4) Inicializar base de datos y datos
 
 Creat tablas
 ```bash
@@ -85,7 +100,7 @@ docker compose exec postgres psql -U postgres -d kavak \
   -c "SELECT make, model, year, price_mxn FROM cars LIMIT 5;"
 ```
 
-## 4) Ingesta de conocimiento (RAG)
+## 5) Ingesta de conocimiento (RAG)
 
 Indexa conocimiento en:
 * Postgres (texto)
@@ -100,7 +115,7 @@ Verifica Qdrant:
 curl http://localhost:6333/collections
 ```
 
-## 5) Smoke tests (End-to-End sin WhatsApp)
+## 6) Smoke tests (End-to-End sin WhatsApp)
 
 Propuesta de valor (RAG)
 ```bash
@@ -130,7 +145,7 @@ Con esto se valida:
 * Orquestación LLM
 * Tools
 
-## 6) WhatsApp Demo
+## 7) WhatsApp Demo
 ### Exponer API con ngrok
 ```bash
 ngrok http 8000
