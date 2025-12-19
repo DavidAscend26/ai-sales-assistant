@@ -165,6 +165,12 @@ Ejemplos:
 * ¿Qué autos tienen disponibles en el catálogo modelo superior a 2020?
 * ¿Cómo funciona el financiamiento para un carro de 280,000 con enganchde de 100,000 a 3 años?
 
+## 8) Opción de demo rápida (One-command demo)
+Para correr la demo completa (sin Whatsapp) de manera local: build, pruebas, sembrar catalógo, ingestar conocimiento de https://www.kavak.com/mx/blog/sedes-de-kavak-en-mexico a través de web scrapping para RAG, correr smoke tests, etc. usar el siguiente script.
+```bash
+./demo.sh
+```
+
 ## Estructura del proyecto
 ```
 app/
